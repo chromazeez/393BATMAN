@@ -1,4 +1,5 @@
 #include "main.h"
+#include "subsystems.hpp"
 
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
@@ -49,28 +50,141 @@ void default_constants() {
 }
 
 void tuning(){
+  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
+  chassis.pid_wait_quick();
 
+  chassis.pid_turn_set(90_deg, TURN_SPEED);
+  chassis.pid_wait_quick();
 }
 
-void skills(){
+// the real route, color is passed in so each selector slot aims the toggle right
+void skill_route(ToggleColor color){
+  clawClose();
+  autoToggle(color, 5000); // route version, spins until it sees the color or 5s
 
+  // ============================================================================
+  // FIRST PIN
+  // ============================================================================
+
+  // initial drive fwd
+  chassis.pid_drive_set(10.5_in, DRIVE_SPEED, true);
+  chassis.pid_wait_quick();
+
+  // turn 90 to face goal
+  chassis.pid_turn_set(90_deg, TURN_SPEED);
+  chassis.pid_wait_quick();
+
+  // raise to 1-pin height while driving into the goal
+  cascadeMove(CASCADE_HEIGHT[1]);
+  chassis.pid_drive_set(11_in, driveSpeedForHeight(), true);
+  chassis.pid_wait_quick();
+  // make sure the lift is up and settled before releasing
+  cascadeWait(250);
+  pros::delay(25);
+  // open claw to score 1st pin
+  clawOpen();
+  pros::delay(25);
+
+  // ============================================================================
+  // SECOND PIN
+  // ============================================================================
+
+  // drive out of the goal
+  chassis.pid_drive_set(-14.5_in, DRIVE_SPEED, true);
+  chassis.pid_wait_quick();
+
+  // turn 45 to face 2nd cup + pin
+  chassis.pid_turn_set(45_deg, TURN_SPEED);
+  chassis.pid_wait_quick();
+
+  // lower the cascade to lowest position (0 position) while driving to second pin
+  cascadeMove(CASCADE_HEIGHT[0]);
+  chassis.pid_drive_set(27.5_in, driveSpeedForHeight(), true);
+  chassis.pid_wait_quick();
+  // finish the drive, THEN clamp. clawClose returns the instant it grips
+  clawClose();
+
+  // raise the cascade to the 1st position so the cup doesn't drag before turn
+  cascadeMove(CASCADE_HEIGHT[1]);
+
+  // turn 180 to face goal
+  chassis.pid_turn_set(180_deg, driveSpeedForHeight());
+  chassis.pid_wait_quick();
+
+  // raise the cascade to 2nd position while driving to score 2nd pin in goal
+  cascadeMove(CASCADE_HEIGHT[2]);
+  chassis.pid_drive_set(20.5_in, driveSpeedForHeight(), true);
+  chassis.pid_wait_quick();
+  // max amount time cascade has to get to the desired height
+  cascadeWait(250); 
+  // bit of delay for jiggle
+  pros::delay(25);
+  // open the claw to score the 2nd pin
+  clawOpen();
+  pros::delay(25);
+
+  // ============================================================================
+  // THIRD PIN
+  // ============================================================================
+    
+  // lower cascade while driving out of the goal
+  cascadeMove(CASCADE_HEIGHT[0]);
+
+  // drive out of the goal
+  chassis.pid_drive_set(-19.5_in, CASCADE_TIER_MID, true);
+  chassis.pid_wait_quick();
+
+  // turn to face the 3rd pin
+  chassis.pid_turn_set(135_deg, TURN_SPEED);
+  chassis.pid_wait_quick();
+
+  // drive to the 3rd pin
+  chassis.pid_drive_set(27.5_in, driveSpeedForHeight(), true);
+  chassis.pid_wait_quick();
+  // finish the drive, THEN clamp. clawClose returns the instant it grips
+  clawClose();
+
+  // adjustment before turn
+  chassis.pid_drive_set(-2.5_in, CASCADE_TIER_MID, true);
+  chassis.pid_wait_quick();
+
+  // raise the cascade to the 1st position so the cup doesn't drag before turn
+  cascadeMove(CASCADE_HEIGHT[1]);
+
+  // turn to -90 to face goal
+  chassis.pid_turn_set(-90_deg, driveSpeedForHeight());
+  chassis.pid_wait_quick();
+
+  // raise the cascade to the 3rd position while driving to score the 3rd pin in goal
+  cascadeMove(CASCADE_HEIGHT[3]);
+  chassis.pid_drive_set(20_in, driveSpeedForHeight(), true);
+  chassis.pid_wait_quick();
+  // max amount time cascade has to get to the desired height
+  cascadeWait(250); 
+  // bit of delay for jiggle
+  pros::delay(50);
+  // open the claw to score the 3rd pin
+  clawOpen();
+  pros::delay(25);
+
+  // back out before lowering the cascade
+  chassis.pid_drive_set(-2_in, CASCADE_TIER_MID, true);
+  chassis.pid_wait_quick();
+
+  // lower the cascade
+  cascadeMove(CASCADE_HEIGHT[0]);
+  pros::delay(50);  
 }
 
-void red_right(){
+// ---- selector wrappers ----
+// the EZ selector calls a plain void(), each one hands the real route the toggle color
+// for its alliance. the field positions differ, but the route body is identical
 
-}
-
-void red_left(){
-
-}
-
-void blue_right(){
-
-}
-
-void blue_left(){
-
-}
+void skills()     { skill_route(ToggleColor::red); }  // skills opening, red toggle
+void red_right()  { skill_route(ToggleColor::red); }
+void red_left()   { skill_route(ToggleColor::red); }
+void blue_right() { skill_route(ToggleColor::blue); }
+void blue_left()  { skill_route(ToggleColor::blue); }
 
 ///
 // Wait Until and Changing Max Speed

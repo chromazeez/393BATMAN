@@ -128,6 +128,23 @@ void clawWait(std::uint32_t timeout) {
     // current-limited, that IS the grip. do NOT brake, there is no ratchet to hold it
 }
 
+// a grab finishes when the claw stops moving against the object (gripped), not when it
+// reaches CLOSED (an object stops it short of that). return the instant it grips, so the
+// route can move on immediately, but never before the grip has set
+static void clawGripWait() {
+    const std::uint32_t start = pros::millis();
+
+    while (pros::millis() - start < CLAW_TIMEOUT) {
+        if (clawArrived()) return; // empty close, actually reached CLOSED
+        if (pros::millis() - start > CLAW_MIN_MS &&
+            std::fabs(claw.get_actual_velocity()) < CLAW_STALL_VEL) {
+            return; // stopped moving = gripped
+        }
+        pros::delay(ez::util::DELAY_TIME);
+    }
+    // timed out, leave move_absolute holding (current-limited). that is still the grip
+}
+
 void clawOpen() { clawMove(CLAW_OPEN); clawWait(CLAW_TIMEOUT); }
-void clawClose() { clawMove(CLAW_CLOSED); clawWait(CLAW_TIMEOUT); }
+void clawClose() { clawMove(CLAW_CLOSED); clawGripWait(); }
 void clawHalf() { clawMove(CLAW_HALF); clawWait(CLAW_TIMEOUT); }

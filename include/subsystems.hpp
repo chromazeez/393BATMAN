@@ -18,7 +18,7 @@ extern Drive chassis;
 //   cascadeMove(CASCADE_HEIGHT[3]);                      // start raising to 3-pin, returns now
 //   chassis.pid_drive_set(26_in, driveSpeedForHeight()); // drive slow because it is going up
 //   chassis.pid_wait_quick();
-//   cascadeWait(500);                                    // only blocks if the drive was too short
+//   cascadeWait(250);                                    // only blocks if the drive was too short
 //   cascadeMove(CASCADE_HEIGHT[0], 150);                 // lower gently, lower rpm = soft set down
 //   fire cascadeMove BEFORE the drive it should slow, driveSpeedForHeight reads it once
 //   tune: CASCADE_HEIGHT[1..5] heights, CASCADE_MAX top limit, the TIER numbers for drive speed
@@ -140,6 +140,8 @@ constexpr double CLAW_CLOSED = 420; // grip          MEASURE ME, set just past o
 
 constexpr double CLAW_TOLERANCE = 8;          // degrees, close enough to call it arrived
 constexpr std::uint32_t CLAW_TIMEOUT = 600;   // give up waiting after this, the grip keeps holding
+constexpr std::uint32_t CLAW_MIN_MS = 120;    // let a grab get moving before the stall check
+constexpr double CLAW_STALL_VEL = 10;         // rpm, slower than this after CLAW_MIN_MS = gripped
 
 // async: go to a position and hold there, returns right away. target clamped to [OPEN, CLOSED]
 void clawMove(double target);
@@ -149,6 +151,6 @@ void clawMove(double target);
 void clawWait(std::uint32_t timeout);
 
 // named blocking actions for routes: move and wait. driver control calls clawMove directly
-void clawOpen();   // release
-void clawClose();  // grab
-void clawHalf();   // ready stance
+void clawOpen();   // release, blocks until open
+void clawClose();  // grab: clamps and returns the instant it grips (stall) or reaches closed
+void clawHalf();   // ready stance, blocks until there
